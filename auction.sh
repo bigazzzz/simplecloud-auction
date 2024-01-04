@@ -8,8 +8,9 @@ yellow=$(tput setaf 3)
 red=$(tput setaf 1)
 reset=$(tput sgr0)
 
-SLEEPTIME=60
+SLEEPTIME=600
 MESSAGE_COLOR=$reset
+PREVIOUS_PRICE_DISCOUNT=100
 
 echo "Enter your credentials on simplecloud.ru"
 read -p "Login: " LOGIN
@@ -29,26 +30,27 @@ while [ 1=1 ]; do
   PRICE=$(curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq '.lots[0] .price' | sed 's/\"//g' | sed 's/\.00//g')
   let PRICE_DISCOUNT=100-$PRICE*100/$PRICE_START
   let PRICE_MONTH=$PRICE/12
-  printf "\r${MESSAGE_COLOR}| $(date +"%T %m-%d-%Y") | %5ds | %6d RUB | %7d RUB | %7d%% |${reset}" $SLEEPTIME $PRICE $PRICE_MONTH $PRICE_DISCOUNT
-  if [ $PRICE_DISCOUNT -ge 40 ]; then
+  if [ $PRICE_DISCOUNT -ge 50 ]; then
     echo -ne '\007'
     SLEEPTIME=1
     MESSAGE_COLOR=$red
-  elif [ $PRICE_DISCOUNT -ge 35 ]; then
-    SLEEPTIME=2
+  elif [ $PRICE_DISCOUNT -ge 40 ]; then
+    SLEEPTIME=15
     MESSAGE_COLOR=$red
   elif [ $PRICE_DISCOUNT -ge 30 ]; then
-    SLEEPTIME=15
+    SLEEPTIME=60
     MESSAGE_COLOR=$yellow
   elif [ $PRICE_DISCOUNT -ge 20 ]; then
-    SLEEPTIME=30
+    SLEEPTIME=120
     MESSAGE_COLOR=$green
-  elif [ $PRICE_DISCOUNT -le 10 ]; then
-    if [ $SLEEPTIME -lt 60 ]; then
-      SLEEPTIME=60
+  elif [ $PRICE_DISCOUNT -lt 20 ]; then
+    if [ $PRICE_DISCOUNT -lt $PREVIOUS_PRICE_DISCOUNT ]; then
+      SLEEPTIME=600
       MESSAGE_COLOR=$reset
-      echo "\n**********************************************************************"
+      echo
     fi
   fi
+  printf "\r${MESSAGE_COLOR}| $(date +"%T %m-%d-%Y") | %5ds | %6d RUB | %7d RUB | %7d%% |${reset}" $SLEEPTIME $PRICE $PRICE_MONTH $PRICE_DISCOUNT
+  PREVIOUS_PRICE_DISCOUNT=$PRICE_DISCOUNT
   sleep $SLEEPTIME
 done
