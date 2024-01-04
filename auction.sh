@@ -10,7 +10,7 @@ reset=$(tput sgr0)
 
 SLEEPTIME=600
 MESSAGE_COLOR=$reset
-PREVIOUS_PRICE_DISCOUNT=100
+PREVIOUS_PRICE_DISCOUNT=-1
 
 echo "Enter your credentials on simplecloud.ru"
 read -p "Login: " LOGIN
@@ -18,16 +18,17 @@ read -s -p "Password: " PASSWORD
 BEARER_TOKEN=$(curl -d "{\"login\":\"$LOGIN\",\"password\":\"$PASSWORD\"}" -X POST -H'Content-Type:application/json;charset=UTF-8' -s https://simplecloud.ru/api/v3/auth/login | jq -r '.session_key')
 echo
 
-PRICE_START=$(curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq -r '.lots[0].start_price' | sed 's/\"//g' | sed 's/\.00//g')
-
-echo "${green}----------------------------------------------------------------------"
-curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq -r '.lots[0] | @sh "Lot price - \(.start_price). Started at \(.started)\nLot config - \(.size.vcpus)/\(.size.ram)/\(.size.disk)"' | tr -d "'"
+echo "${green}-----------------------SELECT LOT-------------------------------------"
+curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq -r '.lots | to_entries[] | @sh "\(.key). Price - \(.value.start_price). Config - \(.value.size.vcpus)/\(.value.size.ram)/\(.value.size.disk)"' | tr -d "'"
+read -p "Lot: " LOT
 echo "----------------------------------------------------------------------${reset}"
+
+PRICE_START=$(curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq -r ".lots[$LOT].start_price" | sed 's/\"//g' | sed 's/\.00//g')
 
 echo "**********************************************************************"
 echo "|        DATE         | PERIOD | YEAR PRICE | MONTH PRICE | DISCOUNT |"
 while [ 1=1 ]; do
-  PRICE=$(curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq '.lots[0] .price' | sed 's/\"//g' | sed 's/\.00//g')
+  PRICE=$(curl -s -H"Authorization: Bearer $BEARER_TOKEN" https://simplecloud.ru/api/v3/auction\?per_page\=1000 | jq -r ".lots[$LOT].price" | sed 's/\"//g' | sed 's/\.00//g')
   let PRICE_DISCOUNT=100-$PRICE*100/$PRICE_START
   let PRICE_MONTH=$PRICE/12
   if [ $PRICE_DISCOUNT -ge 50 ]; then
