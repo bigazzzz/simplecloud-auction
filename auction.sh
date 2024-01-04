@@ -50,7 +50,7 @@ while [ 1=1 ]; do
       echo
     fi
   fi
-  printf "\r${MESSAGE_COLOR}| $(date +"%T %m-%d-%Y") | %5ds | %6d RUB | %7d RUB | %7d%% |${reset}" $SLEEPTIME $PRICE $PRICE_MONTH $PRICE_DISCOUNT
+  printf "\r${MESSAGE_COLOR}| $(date +"%T %d-%m-%Y") | %5ds | %6d RUB | %7d RUB | %7d%% |${reset}" $SLEEPTIME $PRICE $PRICE_MONTH $PRICE_DISCOUNT
   PREVIOUS_PRICE_DISCOUNT=$PRICE_DISCOUNT
   sleep $SLEEPTIME
 done
